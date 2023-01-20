@@ -11,7 +11,6 @@ RUN pnpm install --frozen-lockfile && pnpm run build
 FROM base AS deploy
 
 WORKDIR /app
-ENV NODE_ENV=production
 
 COPY package.json pnpm-lock.yaml ./
 RUN pnpm install --frozen-lockfile

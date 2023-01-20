@@ -45,6 +45,8 @@ type ChannelInfo = {
         'SELECT * FROM auth'
     );
 
+    console.log(process.env.POSTGRESQL_DB_HOST);
+
     const authProvider = new RefreshingAuthProvider(
         {
             clientId: process.env.TWITCH_CLIENT_ID,
