@@ -1,0 +1,8 @@
+version: '3'
+services:
+  speedrunbuddy:
+    image: speedrunbuddy
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: deploy
