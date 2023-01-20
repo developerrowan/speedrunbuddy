@@ -15,7 +15,7 @@ WORKDIR /app
 ENV NODE_ENV=production
 
 COPY package.json pnpm-lock.yaml ./
-COPY .env ./
+COPY --from=base /usr/src/app/.env ./.env
 RUN pnpm install --frozen-lockfile
 
 COPY --from=base /usr/src/app/build ./build
