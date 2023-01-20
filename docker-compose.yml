@@ -6,3 +6,5 @@ services:
       context: .
       dockerfile: Dockerfile
       target: deploy
+    env_file:
+      - .env

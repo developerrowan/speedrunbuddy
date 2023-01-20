@@ -5,7 +5,6 @@ RUN npm i -g pnpm
 WORKDIR /usr/src/app
 
 COPY package.json pnpm-lock.yaml ./
-COPY .env ./
 COPY . .
 RUN pnpm install --frozen-lockfile && pnpm run build
 
@@ -15,7 +14,6 @@ WORKDIR /app
 ENV NODE_ENV=production
 
 COPY package.json pnpm-lock.yaml ./
-COPY --from=base /usr/src/app/.env ./.env
 RUN pnpm install --frozen-lockfile
 
 COPY --from=base /usr/src/app/build ./build
