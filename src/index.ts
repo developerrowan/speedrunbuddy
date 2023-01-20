@@ -18,8 +18,8 @@ const pool = new pg.Pool({
     user: process.env.POSTGRESQL_DB_USERNAME,
     database: process.env.POSTGRESQL_DB_DATABASE,
     password: process.env.POSTGRESQL_DB_PASSWORD,
-    port: +process.env.POSTGRESQL_DB_PORT,
-    host: process.env.POSTGRESQL_DB_HOST
+    port: +process.env.POSTGRESQL_DB_PORT || 5432,
+    host: 'speedrunbuddy.cqzt2vgukgdp.us-east-2.rds.amazonaws.com'
 });
 
 const getChannelsToJoin = async() => {
