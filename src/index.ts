@@ -45,8 +45,6 @@ type ChannelInfo = {
         'SELECT * FROM auth'
     );
 
-    console.log(process.env.POSTGRESQL_DB_HOST);
-
     const authProvider = new RefreshingAuthProvider(
         {
             clientId: process.env.TWITCH_CLIENT_ID,
@@ -284,7 +282,7 @@ const getChannelInfo = async(username: string): Promise<ChannelInfo | undefined>
             const twitch = await response.json();
 
             return {
-                game: "Super Mario 64",
+                game: twitch.data[0].game_name,
                 title: twitch.data[0].title
             } as ChannelInfo;
         }
