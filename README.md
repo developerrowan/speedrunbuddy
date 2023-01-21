@@ -33,6 +33,8 @@ If no category is provided by the user, and the bot cannot find the category in 
 ### `!leave` - Make the bot leave your channel. Can ONLY be ran in the bot's own chat
 
 ## Troubleshooting
+If you run into any strange, persistent issues, please DM me on Twitter at <a href="https://twitter.com/DeveloperRowan">https://twitter.com/DeveloperRowan</a>.
+
 ### Something went wrong
 If you get a message saying something went wrong when trying to get the bot to join your channel, wait a couple minutes and try again. If the issue keeps occurring, please contact me so I may investigate!
 
