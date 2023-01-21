@@ -12,7 +12,8 @@ const regexpCommand = new RegExp(/^!([a-zA-Z0-9]+)(?:\W+)?(.*)?/);
 
 const SOMETHING_WENT_WRONG_MSG = 'Sorry, something went wrong. :( If this keeps happening, contact my creator!';
 
-const INTRODUCTORY_MSG = `Hi! I'm speedrunbuddy! I'm here to help you find your favourite streamer's PBs using just simple commands! Learn more about me and what I can do at URL`;
+const INTRODUCTORY_MSG = `Hi! I'm speedrunbuddy! I'm here to help you find your favourite streamer's PBs using just simple commands! 
+    Learn more about me and what I can do at https://github.com/developerrowan/speedrunbuddy`;
 
 const pool = new pg.Pool({
     user: process.env.POSTGRESQL_DB_USERNAME,
@@ -217,8 +218,15 @@ type ChannelInfo = {
 const getAccessToken = async() => pool.query('SELECT accessToken FROM auth').then(result => result.rows[0].accesstoken);
 
 const reportPb = (client: DecoratedClient, channel: string, displayName: string | undefined, channelInfo: ChannelInfo, run: UserProfileRun) => {
-    const milliseconds = parseInt(run.personalBest);
+
     const category = splitUsername(run.displayRun);
+
+    if (!run.personalBestTime || run.personalBestTime.length === 0) {
+        client.say(channel, `I couldn't find a PB for ${channelInfo.game} in the ${category} category. Has a run been completed?`);
+        return;
+    }
+
+    const milliseconds = parseInt(run.personalBest);
 
     const daysAgo = run.personalBestTime ? Math.floor(daysBetween(run.personalBestTime, new Date().toUTCString())) : -1;
 
