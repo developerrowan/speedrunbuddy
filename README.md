@@ -30,7 +30,7 @@ If no category is provided by the user, and the bot cannot find the category in 
 
 ### `!join` - Make the bot join your channel. Can ONLY be ran in the bot's own chat
 
-### `!join` - Make the bot leave your channel. Can ONLY be ran in the bot's own chat
+### `!leave` - Make the bot leave your channel. Can ONLY be ran in the bot's own chat
 
 ## Troubleshooting
 ### Something went wrong
