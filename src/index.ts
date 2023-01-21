@@ -2,7 +2,7 @@
 
 import 'dotenv/config';
 import * as tmi from '@twurple/auth-tmi';
-import { StaticAuthProvider, RefreshingAuthProvider } from '@twurple/auth';
+import { RefreshingAuthProvider } from '@twurple/auth';
 import pg from 'pg';
 import { UserProfileRun, getUserProfile } from 'therungg';
 import { DecoratedClient } from '@twurple/auth-tmi/lib/client';
@@ -19,7 +19,7 @@ const pool = new pg.Pool({
     database: process.env.POSTGRESQL_DB_DATABASE,
     password: process.env.POSTGRESQL_DB_PASSWORD,
     port: +process.env.POSTGRESQL_DB_PORT || 5432,
-    host: 'speedrunbuddy.cqzt2vgukgdp.us-east-2.rds.amazonaws.com'
+    host: process.env.POSTGRESQL_DB_HOST
 });
 
 const getChannelsToJoin = async() => {
@@ -222,7 +222,7 @@ const reportPb = (client: DecoratedClient, channel: string, displayName: string 
 
     const daysAgo = run.personalBestTime ? Math.floor(daysBetween(run.personalBestTime, new Date().toUTCString())) : -1;
 
-    const daysAgoString = `It was achieved ${daysAgo > 0 ? `${daysAgo} days ago` : 'today'}.`;
+    const daysAgoString = `It was achieved ${daysAgo > 0 ? `${daysAgo} day${daysAgo > 1 ? 's' : ''} ago` : 'today'}.`;
 
     client.say(channel, `${displayName || splitUsername(channel)}'s PB in ${channelInfo.game} in the ${category} category is ${msToTime(milliseconds)}! 
     ${daysAgo !== -1 ? daysAgoString : ''} https://therun.gg/${run.url}`);
@@ -240,7 +240,6 @@ const daysBetween = (startDate: string, endDate: string) => {
 };
 
 const msToTime = (s: number) => {
-    // Pad to 2 or 3 digits, default is 2
     const pad = (n: number, z?: number) => {
       z = z || 2;
       return ('00' + n).slice(-z);
