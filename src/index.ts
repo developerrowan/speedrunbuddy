@@ -8,7 +8,7 @@ import { UserProfileRun, getUserProfile } from 'therungg';
 import { DecoratedClient } from '@twurple/auth-tmi/lib/client';
 import fuzzysort from 'fuzzysort';
 
-const regexpCommand = new RegExp(/^!([a-zA-Z0-9]+)(?:[^\w"“]+)?(?:“|")([^"“”]+)(?:”|")?(?:\W+)?(.*)?/);
+const regexpCommand = new RegExp(/^!([a-zA-Z0-9]+)(?:(?:[^\w"“]+)?(?:“|")([^"“”]+)(?:”|")?(?:\W+)?(.*))?/);
 
 const SOMETHING_WENT_WRONG_MSG = 'Sorry, something went wrong. :( If this keeps happening, contact my creator!';
 
