@@ -8,7 +8,7 @@ import { UserProfileRun, getUserProfile } from 'therungg';
 import { DecoratedClient } from '@twurple/auth-tmi/lib/client';
 import fuzzysort from 'fuzzysort';
 
-const regexpCommand = new RegExp(/^!([a-zA-Z0-9]+)(?:\W+)?(.*)?/);
+const regexpCommand = new RegExp(/^!([a-zA-Z0-9]+)(?:[^\w"“]+)?(?:“|")([^"“”]+)(?:”|")?(?:\W+)?(.*)?/);
 
 const SOMETHING_WENT_WRONG_MSG = 'Sorry, something went wrong. :( If this keeps happening, contact my creator!';
 
@@ -23,7 +23,7 @@ const pool = new pg.Pool({
     host: process.env.POSTGRESQL_DB_HOST
 });
 
-const getChannelsToJoin = async() => {
+const getChannelsToJoin = async () => {
     const rows = await pool.query(
         'SELECT username FROM channels'
     ).then(res => res.rows);
@@ -40,7 +40,7 @@ type ChannelInfo = {
     title: string;
 };
 
-(async() => {
+(async () => {
 
     const authInfo = await pool.query(
         'SELECT * FROM auth'
@@ -72,14 +72,15 @@ type ChannelInfo = {
         },
         channels: await getChannelsToJoin()
     });
-    
+
     client.connect().catch(console.error);
 
-    client.on('message', async(channel: string, userstate: tmi.ChatUserstate, message: string, self: boolean) => {
+    client.on('message', async (channel: string, userstate: tmi.ChatUserstate, message: string, self: boolean) => {
         if (self || userstate['message-type'] != 'chat') return;
-    
+
         if (regexpCommand.test(message)) {
-            const [_, command, argument] = message.match(regexpCommand)!;
+            const [_, command, specifiedGame, argument] = message.match(regexpCommand)!;
+
             const commander = userstate.username!;
             const niceChannelName = splitUsername(channel);
 
@@ -91,12 +92,12 @@ type ChannelInfo = {
             // Hacky fix for leaving a channel when part doesn't immediately work.
             if (!await channelExists(niceChannelName)) return;
 
-            switch(command) {
+            switch (command) {
                 case 'speedrunbuddy':
                     if (niceChannelName === client.getUsername()) break;
 
                     client.say(channel, INTRODUCTORY_MSG);
-                break;
+                    break;
                 case 'join':
                     if (niceChannelName !== client.getUsername()) break;
 
@@ -104,7 +105,7 @@ type ChannelInfo = {
                         client.say(channel, 'Thanks for inviting me over, but I\'m actually already in your chat!')
                     } else {
                         try {
-                            await client.join(commander); 
+                            await client.join(commander);
                         } catch (e: unknown) {
                             client.say(channel, SOMETHING_WENT_WRONG_MSG);
                             return;
@@ -119,7 +120,7 @@ type ChannelInfo = {
                             client.say(channel, SOMETHING_WENT_WRONG_MSG);
                         }
                     }
-                break;
+                    break;
                 case 'leave':
                     if (niceChannelName !== client.getUsername()) break;
 
@@ -134,7 +135,7 @@ type ChannelInfo = {
                     } else {
                         client.say(channel, 'I\'m not in your chat, so I can\'t leave!');
                     }
-                break;
+                    break;
                 case 'pbs':
                     if (niceChannelName === client.getUsername()) break;
 
@@ -142,32 +143,51 @@ type ChannelInfo = {
 
                     if (channelInfo) {
                         displayName = await getDisplayName(niceChannelName);
-                        
+
                         client.say(channel, `Check out all of ${displayName}'s runs and PBs at https://therun.gg/${displayName}!`);
                     }
-                break;
+                    break;
                 case 'personalbest':
                 case 'pb':
                     if (niceChannelName === client.getUsername()) break;
 
-                    channelInfo = await getChannelInfo(niceChannelName);
+                    channelInfo = {
+                        game: '',
+                        title: ''
+                    };
 
-                    if (channelInfo) {
-                        displayName = await getDisplayName(niceChannelName);
-                        const theRunProfile = await getUserProfile(displayName);
+                    displayName = await getDisplayName(niceChannelName);
 
-                        const runs: UserProfileRun[] = theRunProfile.runs;
+                    const theRunProfile = await getUserProfile(displayName);
 
-                        if (runs.length === 0) {
-                            client.say(channel, 'I couldn\'t find any runs for this channel. Are you using TheRun?');
+                    const runs: UserProfileRun[] = theRunProfile.runs;
+
+                    if (runs.length === 0) {
+                        client.say(channel, 'I couldn\'t find any runs for this channel. Are you using TheRun?');
+                        return;
+                    }
+
+                    // Check for a game name being passed in double quotes
+                    if (specifiedGame) {
+                        const compare = fuzzysort.go(specifiedGame, runs, { key: 'game' });
+
+                        if (compare && compare[0]) {
+                            channelInfo.game = compare[0].obj.game;
+                        } else {
+                            client.say(channel, `It doesn't look like ${displayName} has any runs for ${specifiedGame}.`);
                             return;
                         }
+                    }
 
-                        const hasPbInGame = runs.find((run: UserProfileRun) => run.game === channelInfo?.game);
+                    // TODO: Search Live API first
 
-                        if (!hasPbInGame) {
-                            client.say(channel, `I couldn't find a PB for ${channelInfo.game}. Has a run been uploaded for it?`);
-                            return;
+                    const fetchChannelInfo = await getChannelInfo(niceChannelName);
+
+                    if (fetchChannelInfo) {
+                        channelInfo.title = fetchChannelInfo.title;
+
+                        if (!specifiedGame) {
+                            channelInfo.game = fetchChannelInfo.game;
                         }
 
                         if (argument) {
@@ -182,14 +202,21 @@ type ChannelInfo = {
                                 }
                             }
 
-                            client.say(channel, `I couldn't find any runs for the category "${argument}."`);
+                            client.say(channel, `I couldn't find any runs for the category "${argument}" in ${channelInfo.game}.`);
                         } else {
+
+                            const hasPbInGame = runs.find((run: UserProfileRun) => run.game === channelInfo?.game);
+
+                            if (!hasPbInGame) {
+                                client.say(channel, `I couldn't find a PB for ${channelInfo.game}. Has a run been uploaded for it?`);
+                                return;
+                            }
+
                             // First, try to see if the stream title contains a known category
-                            const title = channelInfo.title.toLowerCase();
+                            const title = channelInfo?.title.toLowerCase();
 
                             runs.forEach((run: UserProfileRun) => {
-                                if (run.game === channelInfo?.game && title.includes(splitUsername(run.displayRun).toLowerCase())) {
-                                    console.log("smart");
+                                if (run.game === channelInfo?.game && title?.includes(splitUsername(run.displayRun).toLowerCase())) {
                                     reportPb(client, channel, displayName, channelInfo, run);
                                     return;
                                 }
@@ -209,31 +236,37 @@ type ChannelInfo = {
                     } else {
                         client.say(channel, SOMETHING_WENT_WRONG_MSG);
                     }
-                break;
+                    break;
             }
         }
     });
 })();
 
-const getAccessToken = async() => pool.query('SELECT accessToken FROM auth').then(result => result.rows[0].accesstoken);
+const getAccessToken = async () => pool.query('SELECT accessToken FROM auth').then(result => result.rows[0].accesstoken);
 
 const reportPb = (client: DecoratedClient, channel: string, displayName: string | undefined, channelInfo: ChannelInfo, run: UserProfileRun) => {
 
     const category = splitUsername(run.displayRun);
 
-    if (!run.personalBestTime || run.personalBestTime.length === 0) {
+    if (!run.personalBestTime || run.personalBestTime.length === 0 && !run.hasGameTime) {
         client.say(channel, `I couldn't find a PB for ${channelInfo.game} in the ${category} category. Has a run been completed?`);
         return;
     }
 
-    const milliseconds = parseInt(run.personalBest);
+    const igt: boolean = run.hasGameTime && run.gameTimeData !== null;
+
+    const milliseconds = parseInt(igt ? run.gameTimeData!.personalBest : run.personalBest);
 
     const daysAgo = run.personalBestTime ? Math.floor(daysBetween(run.personalBestTime, new Date().toUTCString())) : -1;
 
     const daysAgoString = `It was achieved ${daysAgo > 0 ? `${daysAgo} day${daysAgo > 1 ? 's' : ''} ago` : 'today'}.`;
 
-    client.say(channel, `${displayName || splitUsername(channel)}'s PB in ${channelInfo.game} in the ${category} category is ${msToTime(milliseconds)}! 
-    ${daysAgo !== -1 ? daysAgoString : ''} https://therun.gg/${run.url}`);
+    const splitURL = run.url.split('/');
+
+    const encodedURL = `https://therun.gg/${splitURL[0]}/${splitURL[1]}/${encodeURIComponent(splitURL[2])}`;
+
+    client.say(channel, `${displayName || splitUsername(channel)}'s PB in ${channelInfo.game} in the ${category} category is ${msToTime(milliseconds)}${igt
+        ? ' (IGT)' : ''}! ${daysAgo !== -1 ? daysAgoString : ''} ${encodedURL}`);
 };
 
 const treatAsUTC = (date: string): Date => {
@@ -249,17 +282,17 @@ const daysBetween = (startDate: string, endDate: string) => {
 
 const msToTime = (s: number) => {
     const pad = (n: number, z?: number) => {
-      z = z || 2;
-      return ('00' + n).slice(-z);
+        z = z || 2;
+        return ('00' + n).slice(-z);
     }
-  
+
     const ms = s % 1000;
     s = (s - ms) / 1000;
     const secs = s % 60;
     s = (s - secs) / 60;
     const mins = s % 60;
     const hrs = (s - mins) / 60;
-  
+
     return pad(hrs) + ':' + pad(mins) + ':' + pad(secs) + '.' + pad(ms, 3);
 };
 
@@ -279,12 +312,12 @@ const getDisplayName = (username: string): Promise<string> => {
     ).then(res => res.rows[0].display_name);
 };
 
-const getChannelInfo = async(username: string): Promise<ChannelInfo | undefined> => {
+const getChannelInfo = async (username: string): Promise<ChannelInfo | undefined> => {
     const channelId: string | undefined = await getUserId(username);
 
     if (!channelId) return undefined;
 
-    return fetch(`https://api.twitch.tv/helix/channels?broadcaster_id=${channelId}`, { 'headers': {'Authorization': `Bearer ${await getAccessToken()}`, 'Client-ID': process.env.TWITCH_CLIENT_ID }}).then(async response => {
+    return fetch(`https://api.twitch.tv/helix/channels?broadcaster_id=${channelId}`, { 'headers': { 'Authorization': `Bearer ${await getAccessToken()}`, 'Client-ID': process.env.TWITCH_CLIENT_ID } }).then(async response => {
         if (response.ok) {
             const twitch = await response.json();
 
@@ -298,30 +331,30 @@ const getChannelInfo = async(username: string): Promise<ChannelInfo | undefined>
     });
 };
 
-const getUserId = async(username: string): Promise<string | undefined> => {
+const getUserId = async (username: string): Promise<string | undefined> => {
     return pool.query(
         'SELECT * FROM channels WHERE username = $1',
         [username]
     ).then(res => res.rowCount === 1 ? res.rows[0].user_id : undefined);
 };
 
-const setLastUsed = async(username: string): Promise<void> => {
+const setLastUsed = async (username: string): Promise<void> => {
     pool.query(
         'UPDATE channels SET last_use_date = $1 WHERE username = $2',
         [new Date(), username]
     );
 };
 
-const addChannel = async(username: string): Promise<boolean> => {
-    return fetch(`https://api.twitch.tv/helix/users?login=${username}`, { 'headers': {'Authorization': `Bearer ${await getAccessToken()}`, 'Client-ID': process.env.TWITCH_CLIENT_ID }}).then(async response => {
+const addChannel = async (username: string): Promise<boolean> => {
+    return fetch(`https://api.twitch.tv/helix/users?login=${username}`, { 'headers': { 'Authorization': `Bearer ${await getAccessToken()}`, 'Client-ID': process.env.TWITCH_CLIENT_ID } }).then(async response => {
         if (response.ok) {
             const twitch = await response.json();
 
-            if(username == twitch.data[0].login) {
+            if (username == twitch.data[0].login) {
                 const result = await pool.query('INSERT INTO channels (username, display_name, user_id) VALUES ($1, $2, $3)',
-                [username, twitch.data[0].display_name, twitch.data[0].id])
+                    [username, twitch.data[0].display_name, twitch.data[0].id])
 
-                if(result.rowCount === 1) {
+                if (result.rowCount === 1) {
                     return true;
                 }
             }
@@ -331,10 +364,10 @@ const addChannel = async(username: string): Promise<boolean> => {
     });
 };
 
-const removeChannel = async(username: string, client: DecoratedClient): Promise<boolean> => {
+const removeChannel = async (username: string, client: DecoratedClient): Promise<boolean> => {
     try {
         await client.part('username');
-    } catch (e: unknown) { 
+    } catch (e: unknown) {
         // This block can be empty due to an issue with part not working. This is handled above.
     }
 
