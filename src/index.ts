@@ -156,7 +156,7 @@ type ChannelInfo = {
                         title: ''
                     };
 
-                    displayName = await getDisplayName("shinyzeni");
+                    displayName = await getDisplayName(niceChannelName);
 
                     const theRunProfile = await getUserProfile(displayName);
 
@@ -181,7 +181,7 @@ type ChannelInfo = {
 
                     // TODO: Search Live API first
 
-                    const fetchChannelInfo = await getChannelInfo("shinyzeni");
+                    const fetchChannelInfo = await getChannelInfo(niceChannelName);
 
                     if (fetchChannelInfo) {
                         channelInfo.title = fetchChannelInfo.title;
