@@ -8,7 +8,7 @@ import { UserProfileRun, getUserProfile } from 'therungg';
 import { DecoratedClient } from '@twurple/auth-tmi/lib/client';
 import fuzzysort from 'fuzzysort';
 
-const regexpCommand = new RegExp(/^!([a-zA-Z0-9]+)(?:(?:[^\w"“]+)?(?:“|")([^"“”]+)(?:”|")?(?:\W+)?(.*))?/);
+const regexpCommand = new RegExp(/^!([a-zA-Z0-9]+)(?:(?:[^\w"“]+)?(?:“|")([^"“”]+)(?:”|")?(?:\W+)?)?(.*)?/);
 
 const SOMETHING_WENT_WRONG_MSG = 'Sorry, something went wrong. :( If this keeps happening, contact my creator!';
 
@@ -79,7 +79,7 @@ type ChannelInfo = {
         if (self || userstate['message-type'] != 'chat') return;
 
         if (regexpCommand.test(message)) {
-            const [_, command, specifiedGame, argument] = message.match(regexpCommand)!;
+            let [_, command, specifiedGame, argument] = message.match(regexpCommand)!;
 
             const commander = userstate.username!;
             const niceChannelName = splitUsername(channel);
@@ -156,7 +156,7 @@ type ChannelInfo = {
                         title: ''
                     };
 
-                    displayName = await getDisplayName(niceChannelName);
+                    displayName = await getDisplayName("shinyzeni");
 
                     const theRunProfile = await getUserProfile(displayName);
 
@@ -181,7 +181,7 @@ type ChannelInfo = {
 
                     // TODO: Search Live API first
 
-                    const fetchChannelInfo = await getChannelInfo(niceChannelName);
+                    const fetchChannelInfo = await getChannelInfo("shinyzeni");
 
                     if (fetchChannelInfo) {
                         channelInfo.title = fetchChannelInfo.title;
@@ -191,6 +191,8 @@ type ChannelInfo = {
                         }
 
                         if (argument) {
+                            argument = argument.trim();
+
                             const compare = fuzzysort.go(`${channelInfo.game}#${argument.toLowerCase()}`, runs, { key: 'displayRun' });
 
                             if (compare && compare[0]) {
