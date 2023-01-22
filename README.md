@@ -17,10 +17,17 @@ You should receive a message saying the bot joined, and it should say hello in y
 
 ## Commands
 
-### `!pb [category]` - Get the streamer's PB for the game they are currently playing
-You can optionally provide a category to this command, such as `!pb 70 star`, but this is only if you want to see a PB for a different category than the streamer is curently running.
+### `!pb "[game]" [category]` - Get the streamer's PB for the game they are currently playing
+Examples:
 
-**As long as the category is in the stream title, the bot can automatically detect the category without the need to specify a category.**
+`!pb "Super Mario 64" 16` - gets the PB in the 16 star category of SM64
+
+`!pb "Super Mario 64"` - gets the first found PB for Super Mario 64 (first category the bot finds)
+
+`!pb 70 star` - gets the PB in the category "70 star." Note this will rely on the game the streamer is currently playing.
+
+`!pb` - gets the PB of the game the streamer is currently playing. **NOTE: As long as the category is in the stream title, the bot can automatically detect the category without the need to specify a category and the game matches the one provided.**
+
 
 If no category is provided by the user, and the bot cannot find the category in the title, it will default to the first category it finds from TheRun.
 
