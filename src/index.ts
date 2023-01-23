@@ -156,7 +156,7 @@ type ChannelInfo = {
                         title: ''
                     };
 
-                    displayName = await getDisplayName(niceChannelName);
+                    displayName = await getDisplayName("shinyzeni");
 
                     const theRunProfile = await getUserProfile(displayName);
 
@@ -181,7 +181,7 @@ type ChannelInfo = {
 
                     // TODO: Search Live API first
 
-                    const fetchChannelInfo = await getChannelInfo(niceChannelName);
+                    const fetchChannelInfo = await getChannelInfo("shinyzeni");
 
                     if (fetchChannelInfo) {
                         channelInfo.title = fetchChannelInfo.title;
@@ -217,12 +217,14 @@ type ChannelInfo = {
                             // First, try to see if the stream title contains a known category
                             const title = channelInfo?.title.toLowerCase();
 
-                            runs.forEach((run: UserProfileRun) => {
+                            for (let i = 0; i < runs.length; i++) {
+                                const run: UserProfileRun = runs[i];
+
                                 if (run.game === channelInfo?.game && title?.includes(splitUsername(run.displayRun).toLowerCase())) {
                                     reportPb(client, channel, displayName, channelInfo, run);
                                     return;
                                 }
-                            });
+                            }
 
                             // Fallback to trying to find any%
                             const anyPercentCategory = runs.find((run: UserProfileRun) => run.game === channelInfo?.game && splitUsername(run.displayRun).toLowerCase() === 'any%')
@@ -269,6 +271,8 @@ const reportPb = (client: DecoratedClient, channel: string, displayName: string 
 
     client.say(channel, `${displayName || splitUsername(channel)}'s PB in ${channelInfo.game} in the ${category} category is ${msToTime(milliseconds)}${igt
         ? ' (IGT)' : ''}! ${daysAgo !== -1 ? daysAgoString : ''} ${encodedURL}`);
+
+    return;
 };
 
 const treatAsUTC = (date: string): Date => {
