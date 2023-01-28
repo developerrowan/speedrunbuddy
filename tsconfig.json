@@ -1,17 +1,17 @@
 {
   "compilerOptions": {
-    "target": "es2022",              
-    "module": "es2022",              
+    "target": "es2015",
+    "module": "es2015",
     "allowJs": true,
-    "outDir": "build",                     
+    "outDir": "build",
     "rootDir": "src",
     "strict": true,
     "moduleResolution": "node",
     "noImplicitAny": true,
-    "esModuleInterop": true,
+    "esModuleInterop": true
   },
   "include": ["**/*.ts"],
-  "exclude": ["node_modules"],
+  "exclude": ["node_modules", "vite.config.ts"],
   "ts-node": {
     "files": true
   }
