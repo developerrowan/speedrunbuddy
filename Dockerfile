@@ -17,4 +17,4 @@ RUN pnpm install --frozen-lockfile
 
 COPY --from=base /usr/src/app/build ./build
 
-CMD ["node", "build/index.js"]
+CMD ["pnpm", "run", "start"]
