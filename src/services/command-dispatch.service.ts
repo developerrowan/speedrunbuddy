@@ -94,6 +94,8 @@ export default class CommandDispatchService {
     if (!(await ChannelService.doesChannelExist(wrapper.channel.channelName)))
       return;
 
+    ChannelService.setChannelLastUsedDate(wrapper.channel.channelName);
+
     commandExists.commandAction(wrapper, commandProperties);
   }
 }
