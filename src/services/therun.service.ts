@@ -1,6 +1,12 @@
 import fuzzysort from 'fuzzysort';
 import { CommandProperties, ClientWrapper } from './command-dispatch.service';
-import { getUserProfile, UserProfile, UserProfileRun } from 'therungg';
+import {
+  getLiveRun,
+  getUserProfile,
+  LiveRun,
+  UserProfile,
+  UserProfileRun,
+} from 'therungg';
 import { Channel, TwitchChannelInfo } from './channel.service';
 import * as constants from '../constants';
 import { DecoratedClient } from '@twurple/auth-tmi/lib/client';
@@ -17,24 +23,19 @@ export default abstract class TheRunService {
     );
   }
 
-  public static async pbCommand(
+  private static async negotiateRun(
     wrapper: ClientWrapper,
-    properties: CommandProperties,
-    special?: boolean
-  ): Promise<void> {
+    properties: CommandProperties
+  ): Promise<UserProfileRun | undefined> {
     const client = Speedrunbuddy.client;
     const channel = wrapper.channel;
-
-    const reportFunction = special
-      ? TheRunService.reportAttempts
-      : TheRunService.reportPbToChannel;
 
     let theRunProfile: UserProfile;
     try {
       theRunProfile = await getUserProfile(channel.displayName);
     } catch (e: unknown) {
       console.log(e);
-      return;
+      return undefined;
     }
 
     const runs: UserProfileRun[] = theRunProfile.runs;
@@ -49,7 +50,7 @@ export default abstract class TheRunService {
         channel.ircChannelName,
         "I couldn't find any runs for this channel. Are you using TheRun?"
       );
-      return;
+      return undefined;
     }
 
     if (properties.quotedArgument) {
@@ -64,11 +65,26 @@ export default abstract class TheRunService {
           channel.ircChannelName,
           `It doesn't look like ${channel.displayName} has any runs for ${properties.quotedArgument}.`
         );
-        return;
+        return undefined;
       }
     }
 
-    // TODO: Search Live API first
+    // Searches the Live HTTP API first
+    const liveRun: LiveRun = await getLiveRun(channel.displayName);
+
+    if (
+      liveRun.game &&
+      liveRun.category &&
+      !(properties.quotedArgument || properties.argument)
+    ) {
+      const matchedRun = theRunProfile.runs.find(
+        run =>
+          run.game === liveRun.game &&
+          UtilityService.splitHash(run.displayRun) === liveRun.category
+      );
+
+      if (matchedRun) return matchedRun;
+    }
 
     // Saves a precious Twitch API call if a fully-formed command is provided
     if (!(properties.quotedArgument && properties.argument)) {
@@ -78,7 +94,7 @@ export default abstract class TheRunService {
 
       if (!fetchChannelInfo) {
         client.say(channel.ircChannelName, constants.SOMETHING_WENT_WRONG_MSG);
-        return;
+        return undefined;
       }
 
       channelInfo.title = fetchChannelInfo.title;
@@ -100,9 +116,7 @@ export default abstract class TheRunService {
           (run: UserProfileRun) => run.displayRun === compare[0].target
         );
 
-        if (found) {
-          return reportFunction(client, channel, channelInfo, found);
-        }
+        if (found) return found;
       }
 
       client.say(
@@ -119,7 +133,7 @@ export default abstract class TheRunService {
           channel.ircChannelName,
           `I couldn't find a PB for ${channelInfo.game}. Has a run been uploaded for it?`
         );
-        return;
+        return undefined;
       }
 
       // Search inside stream title for category
@@ -135,7 +149,7 @@ export default abstract class TheRunService {
               UtilityService.splitHash(run.displayRun).toLowerCase()
             )
           ) {
-            return reportFunction(client, channel, channelInfo, run);
+            return run;
           }
         }
       }
@@ -147,30 +161,59 @@ export default abstract class TheRunService {
           UtilityService.splitHash(run.displayRun).toLowerCase() === 'any%'
       );
 
-      if (anyPercentCategory) {
-        return reportFunction(client, channel, channelInfo, anyPercentCategory);
-      }
+      if (anyPercentCategory) return anyPercentCategory;
 
       // Give up. Return the first found category
-      reportFunction(client, channel, channelInfo, hasPbInGame);
+      return hasPbInGame;
     }
+  }
+
+  public static async pbCommand(
+    wrapper: ClientWrapper,
+    properties: CommandProperties
+  ): Promise<void> {
+    const client = Speedrunbuddy.client;
+    const channel = wrapper.channel;
+
+    const run: UserProfileRun | undefined = await TheRunService.negotiateRun(
+      wrapper,
+      properties
+    );
+
+    if (run) TheRunService.reportPbToChannel(client, channel, run);
+  }
+
+  public static async attemptsCommand(
+    wrapper: ClientWrapper,
+    properties: CommandProperties
+  ): Promise<void> {
+    const client = Speedrunbuddy.client;
+    const channel = wrapper.channel;
+
+    const run: UserProfileRun | undefined = await TheRunService.negotiateRun(
+      wrapper,
+      properties
+    );
+
+    if (run) TheRunService.reportAttempts(client, channel, run);
   }
 
   public static reportAttempts(
     client: DecoratedClient,
     channel: Channel,
-    channelInfo: TwitchChannelInfo,
     run: UserProfileRun
   ): void {
     const category = UtilityService.splitHash(run.displayRun);
-    const game = channelInfo.game;
+    const game = run.game;
     const attemptCount = run.attemptCount;
     const finishedAttempts = run.finishedAttemptCount;
 
-    const msgPartOne = `${channel.displayName} has ${attemptCount} attempts in ${game} ${category}.`;
+    const msgPartOne = `${
+      channel.displayName
+    } has ${attemptCount.toLocaleString()} attempts in ${game} ${category}.`;
     const msgPartTwo =
       finishedAttempts > 0
-        ? `They have finished ${finishedAttempts} runs, or ${
+        ? `They have finished ${finishedAttempts.toLocaleString()} runs, or ${
             Math.round((finishedAttempts / attemptCount) * 100 * 10) / 10
           }% of all attempts.`
         : 'They have not finished any attempts (yet!).';
@@ -181,7 +224,6 @@ export default abstract class TheRunService {
   public static reportPbToChannel(
     client: DecoratedClient,
     channel: Channel,
-    channelInfo: TwitchChannelInfo,
     run: UserProfileRun
   ): void {
     const category = UtilityService.splitHash(run.displayRun);
@@ -192,7 +234,7 @@ export default abstract class TheRunService {
     ) {
       client.say(
         channel.ircChannelName,
-        `I couldn't find a PB for ${channelInfo.game} in the ${category} category. Has a run been completed?`
+        `I couldn't find a PB for ${run.game} in the ${category} category. Has a run been completed?`
       );
       return;
     }
@@ -225,7 +267,7 @@ export default abstract class TheRunService {
     client.say(
       channel.ircChannelName,
       `${channel.displayName}'s PB in ${
-        channelInfo.game
+        run.game
       } in the ${category} category is ${UtilityService.formatMilliseconds(
         milliseconds
       )}${igt ? ' (IGT)' : ''}! ${
