@@ -19,10 +19,18 @@ export default abstract class TheRunService {
 
   public static async pbCommand(
     wrapper: ClientWrapper,
-    properties: CommandProperties
+    properties: CommandProperties,
+    special?: boolean
   ): Promise<void> {
     const client = Speedrunbuddy.client;
     const channel = wrapper.channel;
+
+    channel.displayName = 'Zeas44';
+    channel.channelName = 'zeas44';
+
+    const reportFunction = special
+      ? TheRunService.reportAttempts
+      : TheRunService.reportPbToChannel;
 
     let theRunProfile: UserProfile;
     try {
@@ -96,12 +104,7 @@ export default abstract class TheRunService {
         );
 
         if (found) {
-          return TheRunService.reportPbToChannel(
-            client,
-            channel,
-            channelInfo,
-            found
-          );
+          return reportFunction(client, channel, channelInfo, found);
         }
       }
 
@@ -135,12 +138,7 @@ export default abstract class TheRunService {
               UtilityService.splitHash(run.displayRun).toLowerCase()
             )
           ) {
-            return TheRunService.reportPbToChannel(
-              client,
-              channel,
-              channelInfo,
-              run
-            );
+            return reportFunction(client, channel, channelInfo, run);
           }
         }
       }
@@ -153,22 +151,34 @@ export default abstract class TheRunService {
       );
 
       if (anyPercentCategory) {
-        return TheRunService.reportPbToChannel(
-          client,
-          channel,
-          channelInfo,
-          anyPercentCategory
-        );
+        return reportFunction(client, channel, channelInfo, anyPercentCategory);
       }
 
       // Give up. Return the first found category
-      TheRunService.reportPbToChannel(
-        client,
-        channel,
-        channelInfo,
-        hasPbInGame
-      );
+      reportFunction(client, channel, channelInfo, hasPbInGame);
     }
+  }
+
+  public static reportAttempts(
+    client: DecoratedClient,
+    channel: Channel,
+    channelInfo: TwitchChannelInfo,
+    run: UserProfileRun
+  ): void {
+    const category = UtilityService.splitHash(run.displayRun);
+    const game = channelInfo.game;
+    const attemptCount = run.attemptCount;
+    const finishedAttempts = run.finishedAttemptCount;
+
+    const msgPartOne = `${channel.displayName} has ${attemptCount} attempts in ${game} ${category}.`;
+    const msgPartTwo =
+      finishedAttempts > 0
+        ? `They have finished ${finishedAttempts} runs, or ${
+            Math.round((finishedAttempts / attemptCount) * 100 * 10) / 10
+          }% of all attempts.`
+        : 'They have not finished any attempts (yet!).';
+
+    client.say(channel.ircChannelName, `${msgPartOne} ${msgPartTwo}`);
   }
 
   public static reportPbToChannel(

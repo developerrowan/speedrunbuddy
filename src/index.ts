@@ -32,6 +32,11 @@ CommandDispatchService.registerAll([
     commandAlias: 'personalbests',
     commandAction: TheRunService.pbsCommand,
   },
+  {
+    commandName: 'attempts',
+    special: true,
+    commandAction: TheRunService.pbCommand,
+  },
 ]);
 
 Speedrunbuddy.start();
