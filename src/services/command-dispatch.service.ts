@@ -15,11 +15,9 @@ export type ClientWrapper = {
   userstate: Userstate;
 };
 
-// this "special" thing is so stupid. Refactor this asap.
 export type CommandFunction = (
   wrapper: ClientWrapper,
-  commandProperties: CommandProperties,
-  special?: boolean
+  commandProperties: CommandProperties
 ) => void;
 
 export type Command = {
@@ -28,7 +26,6 @@ export type Command = {
   commandAction: CommandFunction;
   listenInBotChat?: boolean;
   botChatOnly?: boolean;
-  special?: true;
 };
 
 export default class CommandDispatchService {
@@ -99,10 +96,6 @@ export default class CommandDispatchService {
 
     ChannelService.setChannelLastUsedDate(wrapper.channel.channelName);
 
-    commandExists.commandAction(
-      wrapper,
-      commandProperties,
-      commandExists.special
-    );
+    commandExists.commandAction(wrapper, commandProperties);
   }
 }

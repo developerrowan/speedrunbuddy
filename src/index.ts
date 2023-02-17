@@ -34,8 +34,7 @@ CommandDispatchService.registerAll([
   },
   {
     commandName: 'attempts',
-    special: true,
-    commandAction: TheRunService.pbCommand,
+    commandAction: TheRunService.attemptsCommand,
   },
 ]);
 
