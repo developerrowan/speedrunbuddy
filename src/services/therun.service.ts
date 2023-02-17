@@ -25,9 +25,6 @@ export default abstract class TheRunService {
     const client = Speedrunbuddy.client;
     const channel = wrapper.channel;
 
-    channel.displayName = 'Zeas44';
-    channel.channelName = 'zeas44';
-
     const reportFunction = special
       ? TheRunService.reportAttempts
       : TheRunService.reportPbToChannel;
