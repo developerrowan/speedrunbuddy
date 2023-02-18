@@ -11,10 +11,8 @@ import {
 } from 'therungg';
 import { Channel, TwitchChannelInfo } from './channel.service';
 import * as constants from '../constants';
-import { DecoratedClient } from '@twurple/auth-tmi/lib/client';
 import { ChannelService, UtilityService } from '../services';
 import Speedrunbuddy from '../speedrunbuddy';
-import { channel } from 'diagnostics_channel';
 
 export default abstract class TheRunService {
   public static pbsCommand(wrapper: ClientWrapper, _: CommandProperties): void {
