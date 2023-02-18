@@ -41,7 +41,7 @@
     "dotenv": "^16.0.3",
     "fuzzysort": "^2.0.4",
     "pg": "^8.8.0",
-    "therungg": "^1.2.0",
+    "therungg": "^1.2.2",
     "tmi.js": "^1.8.5",
     "twitch-js": "2.0.0-beta.45"
   },

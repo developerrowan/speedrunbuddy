@@ -1,15 +1,16 @@
 import fuzzysort from 'fuzzysort';
 import { CommandProperties, ClientWrapper } from './command-dispatch.service';
 import {
+  getHistory,
   getLiveRun,
   getUserProfile,
   LiveRun,
+  RunHistory,
   UserProfile,
   UserProfileRun,
 } from 'therungg';
 import { Channel, TwitchChannelInfo } from './channel.service';
 import * as constants from '../constants';
-import { DecoratedClient } from '@twurple/auth-tmi/lib/client';
 import { ChannelService, UtilityService } from '../services';
 import Speedrunbuddy from '../speedrunbuddy';
 
@@ -35,15 +36,14 @@ export default abstract class TheRunService {
       theRunProfile = await getUserProfile(channel.displayName);
     } catch (e: unknown) {
       console.log(e);
+      Speedrunbuddy.client.say(
+        channel.ircChannelName,
+        constants.SOMETHING_WENT_WRONG_MSG
+      );
       return undefined;
     }
 
     const runs: UserProfileRun[] = theRunProfile.runs;
-
-    const channelInfo: TwitchChannelInfo = {
-      game: '',
-      title: '',
-    };
 
     if (runs.length === 0) {
       client.say(
@@ -52,6 +52,11 @@ export default abstract class TheRunService {
       );
       return undefined;
     }
+
+    const channelInfo: TwitchChannelInfo = {
+      game: '',
+      title: '',
+    };
 
     if (properties.quotedArgument) {
       const compare = fuzzysort.go(properties.quotedArgument, runs, {
@@ -180,52 +185,7 @@ export default abstract class TheRunService {
       properties
     );
 
-    if (run) TheRunService.reportPbToChannel(client, channel, run);
-  }
-
-  public static async attemptsCommand(
-    wrapper: ClientWrapper,
-    properties: CommandProperties
-  ): Promise<void> {
-    const client = Speedrunbuddy.client;
-    const channel = wrapper.channel;
-
-    const run: UserProfileRun | undefined = await TheRunService.negotiateRun(
-      wrapper,
-      properties
-    );
-
-    if (run) TheRunService.reportAttempts(client, channel, run);
-  }
-
-  public static reportAttempts(
-    client: DecoratedClient,
-    channel: Channel,
-    run: UserProfileRun
-  ): void {
-    const category = UtilityService.splitHash(run.displayRun);
-    const game = run.game;
-    const attemptCount = run.attemptCount;
-    const finishedAttempts = run.finishedAttemptCount;
-
-    const msgPartOne = `${
-      channel.displayName
-    } has ${attemptCount.toLocaleString()} attempts in ${game} ${category}.`;
-    const msgPartTwo =
-      finishedAttempts > 0
-        ? `They have finished ${finishedAttempts.toLocaleString()} runs, or ${
-            Math.round((finishedAttempts / attemptCount) * 100 * 10) / 10
-          }% of all attempts.`
-        : 'They have not finished any attempts (yet!).';
-
-    client.say(channel.ircChannelName, `${msgPartOne} ${msgPartTwo}`);
-  }
-
-  public static reportPbToChannel(
-    client: DecoratedClient,
-    channel: Channel,
-    run: UserProfileRun
-  ): void {
+    if (!run) return;
     const category = UtilityService.splitHash(run.displayRun);
 
     if (
@@ -273,6 +233,69 @@ export default abstract class TheRunService {
       )}${igt ? ' (IGT)' : ''}! ${
         daysAgo !== -1 ? daysAgoString : ''
       } ${encodedURL}`
+    );
+  }
+
+  public static async attemptsCommand(
+    wrapper: ClientWrapper,
+    properties: CommandProperties
+  ): Promise<void> {
+    const channel = wrapper.channel;
+
+    const run: UserProfileRun | undefined = await TheRunService.negotiateRun(
+      wrapper,
+      properties
+    );
+
+    if (!run) return;
+
+    const category = UtilityService.splitHash(run.displayRun);
+    const game = run.game;
+    const attemptCount = run.attemptCount;
+    const finishedAttempts = run.finishedAttemptCount;
+
+    const msgPartOne = `${
+      channel.displayName
+    } has ${attemptCount.toLocaleString()} attempts in ${game} ${category}.`;
+    const msgPartTwo =
+      finishedAttempts > 0
+        ? `They have finished ${finishedAttempts.toLocaleString()} runs, or ${
+            Math.round((finishedAttempts / attemptCount) * 100 * 10) / 10
+          }% of all attempts.`
+        : 'They have not finished any attempts (yet!).';
+
+    Speedrunbuddy.client.say(
+      channel.ircChannelName,
+      `${msgPartOne} ${msgPartTwo}`
+    );
+  }
+
+  public static async playtimeCommand(
+    wrapper: ClientWrapper,
+    properties: CommandProperties
+  ): Promise<void> {
+    const channel: Channel = wrapper.channel;
+
+    const run: UserProfileRun | undefined = await TheRunService.negotiateRun(
+      wrapper,
+      properties
+    );
+
+    if (!run) return;
+
+    const historyFile: RunHistory = await getHistory(run.historyFilename);
+
+    const game: string = run.game;
+    const category: string = UtilityService.splitHash(run.displayRun);
+    const timeInMilliseconds: number = parseInt(historyFile.meta.totalRunTime);
+
+    Speedrunbuddy.client.say(
+      channel.ircChannelName,
+      `${
+        channel.displayName
+      } has spent ${UtilityService.millisecondsToDaysHourMinutes(
+        timeInMilliseconds
+      )} running ${game} ${category} (and that's not including practice!).`
     );
   }
 }
