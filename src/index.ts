@@ -36,6 +36,10 @@ CommandDispatchService.registerAll([
     commandName: 'attempts',
     commandAction: TheRunService.attemptsCommand,
   },
+  {
+    commandName: 'playtime',
+    commandAction: TheRunService.playtimeCommand,
+  },
 ]);
 
 Speedrunbuddy.start();

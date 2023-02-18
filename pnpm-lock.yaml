@@ -18,7 +18,7 @@ specifiers:
   nodemon: ^2.0.20
   pg: ^8.8.0
   prettier: ^2.8.3
-  therungg: ^1.2.0
+  therungg: ^1.2.2
   tmi.js: ^1.8.5
   ts-node: ^10.9.1
   twitch-js: 2.0.0-beta.45
@@ -33,7 +33,7 @@ dependencies:
   dotenv: 16.0.3
   fuzzysort: 2.0.4
   pg: 8.8.0
-  therungg: 1.2.0
+  therungg: 1.2.2
   tmi.js: 1.8.5
   twitch-js: 2.0.0-beta.45
 
@@ -2652,8 +2652,8 @@ packages:
     resolution: {integrity: sha512-N+8UisAXDGk8PFXP4HAzVR9nbfmVJ3zYLAWiTIoqC5v5isinhr+r5uaO8+7r3BMfuNIufIsA7RdpVgacC2cSpw==}
     dev: true
 
-  /therungg/1.2.0:
-    resolution: {integrity: sha512-gQlYZ2R0Ws7pcInEKr7YgODvsAlJe2CP0SdZH5RR2/JVuGD54FYiVE5xzeCHNV38iQaNoU0NUGoHtSnHqz+EDQ==}
+  /therungg/1.2.2:
+    resolution: {integrity: sha512-+GrsYHeYkFO3yPWoRYbdGmHJzwvG/eUgygNegxN85WkPczUnOK/MoR2HBsCu6Jl4vCli6Z1oaDlfA48uclotaQ==}
     dependencies:
       isomorphic-ws: 5.0.0_ws@8.12.0
       ws: 8.12.0
