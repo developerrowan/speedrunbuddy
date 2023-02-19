@@ -2,6 +2,10 @@ import { Userstate } from 'tmi.js';
 import ChannelService, { Channel } from './channel.service';
 import * as constants from '../constants';
 import Speedrunbuddy from '../speedrunbuddy';
+import ICommand from '../commands/ICommand';
+import path from 'path';
+import { readdirSync } from 'fs';
+import UtilityService from './utility.service';
 
 export type CommandProperties = {
   raw: string;
@@ -20,30 +24,46 @@ export type CommandFunction = (
   commandProperties: CommandProperties
 ) => void;
 
-export type Command = {
-  commandName: string;
-  commandAlias?: string;
-  commandAction: CommandFunction;
-  listenInBotChat?: boolean;
-  botChatOnly?: boolean;
-};
-
 export default class CommandDispatchService {
-  private static _commands: Command[] = [];
+  private static _commands: ICommand[] = [];
+  private static _skippedCommands: number;
 
-  public static register(command: Command): void {
-    if (
-      !command.commandName ||
-      this._commands.find(c => c.commandName === command.commandName)
-    )
+  public static register(command: ICommand): void {
+    if (this._commands.find(c => c.name === command.name)) {
+      this._skippedCommands++;
       return;
+    }
 
     this._commands.push(command);
   }
 
-  public static registerAll(commands: Command[]): void {
-    for (let i = 0; i < commands.length; i++) {
-      this.register(commands[i]);
+  public static async registerAll(): Promise<void> {
+    const commandDirectory: URL = new URL('../commands', import.meta.url);
+
+    const files = readdirSync(commandDirectory).filter(filename =>
+      filename.endsWith('.command.ts')
+    );
+
+    for (let i = 0; i < files.length; i++) {
+      this.register(
+        new (await import(path.join(commandDirectory.href, files[i]))).default()
+      );
+    }
+
+    console.info(
+      `${this._commands.length} ${UtilityService.pluralise(
+        'command',
+        this._commands.length
+      )} registered successfully.`
+    );
+
+    if (this._skippedCommands > 0) {
+      console.warn(
+        `Skipped ${this._skippedCommands} ${UtilityService.pluralise(
+          'command',
+          this._skippedCommands
+        )}.`
+      );
     }
   }
 
@@ -66,11 +86,11 @@ export default class CommandDispatchService {
       argument: regexProperties[3]?.trim(),
     } as CommandProperties;
 
-    const commandExists: Command | undefined =
+    const commandExists: ICommand | undefined =
       CommandDispatchService._commands.find(
         c =>
-          c.commandName === commandProperties.command ||
-          c.commandAlias === commandProperties.command
+          c.name === commandProperties.command ||
+          c.alias === commandProperties.command
       );
 
     if (!commandExists) return;
@@ -96,6 +116,6 @@ export default class CommandDispatchService {
 
     ChannelService.setChannelLastUsedDate(wrapper.channel.channelName);
 
-    commandExists.commandAction(wrapper, commandProperties);
+    commandExists.execute(wrapper, commandProperties);
   }
 }

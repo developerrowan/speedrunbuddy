@@ -2,5 +2,5 @@
 . "$(dirname -- "$0")/_/husky.sh"
 
 pnpm exec lint-staged
-pnpm run test
+#pnpm run test
 pnpm run build

@@ -25,16 +25,24 @@ export default abstract class Speedrunbuddy {
       await AuthService.getAuthInfo()
     );
 
+    const channels: string[] = await ChannelService.getChannelsToJoin();
+
     this._client = new Client({
       authProvider: this._authProvider,
       connection: {
         reconnect: true,
         secure: true,
       },
-      channels: await ChannelService.getChannelsToJoin(),
+      channels: channels,
     });
 
+    await CommandDispatchService.registerAll();
+
+    console.info(`Connecting to ${channels.length} channels.`);
+
     await this._client.connect().catch(console.error);
+
+    console.info('Ready to accept commands!');
 
     this._client.on(
       'message',

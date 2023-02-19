@@ -12,6 +12,7 @@ specifiers:
   '@vitest/coverage-c8': ^0.28.3
   dotenv: ^16.0.3
   eslint: ^8.32.0
+  eslint-plugin-unused-imports: ^2.0.0
   fuzzysort: ^2.0.4
   husky: ^8.0.3
   lint-staged: ^13.1.0
@@ -45,6 +46,7 @@ devDependencies:
   '@typescript-eslint/parser': 5.48.2_7uibuqfxkfaozanbtbziikiqje
   '@vitest/coverage-c8': 0.28.3
   eslint: 8.32.0
+  eslint-plugin-unused-imports: 2.0.0_virssgr5omih4ylyae2gddvmxu
   husky: 8.0.3
   lint-staged: 13.1.0
   nodemon: 2.0.20
@@ -1192,6 +1194,26 @@ packages:
   /escape-string-regexp/4.0.0:
     resolution: {integrity: sha512-TtpcNJ3XAzx3Gq8sWRzJaVajRs0uVxA2YAkdb1jm2YkPz4G6egUFAyA3n5vtEIZefPk5Wa4UXbKuS5fKkJWdgA==}
     engines: {node: '>=10'}
+    dev: true
+
+  /eslint-plugin-unused-imports/2.0.0_virssgr5omih4ylyae2gddvmxu:
+    resolution: {integrity: sha512-3APeS/tQlTrFa167ThtP0Zm0vctjr4M44HMpeg1P4bK6wItarumq0Ma82xorMKdFsWpphQBlRPzw/pxiVELX1A==}
+    engines: {node: ^12.22.0 || ^14.17.0 || >=16.0.0}
+    peerDependencies:
+      '@typescript-eslint/eslint-plugin': ^5.0.0
+      eslint: ^8.0.0
+    peerDependenciesMeta:
+      '@typescript-eslint/eslint-plugin':
+        optional: true
+    dependencies:
+      '@typescript-eslint/eslint-plugin': 5.48.2_caon6io6stgpr7lz2rtbhekxqy
+      eslint: 8.32.0
+      eslint-rule-composer: 0.3.0
+    dev: true
+
+  /eslint-rule-composer/0.3.0:
+    resolution: {integrity: sha512-bt+Sh8CtDmn2OajxvNO+BX7Wn4CIWMpTRm3MaiKPCQcnnlm0CS2mhui6QaoeQugs+3Kj2ESKEEGJUdVafwhiCg==}
+    engines: {node: '>=4.0.0'}
     dev: true
 
   /eslint-scope/5.1.1:
