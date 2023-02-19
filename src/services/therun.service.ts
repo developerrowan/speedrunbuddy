@@ -99,23 +99,17 @@ export default abstract class TheRunService {
     }
 
     if (properties.argument) {
-      const compare = fuzzysort.go(
-        `${channelInfo.game}#${properties.argument.toLowerCase()}`,
-        runs,
-        { key: 'displayRun' }
-      );
+      const compare = fuzzysort.go(properties.argument, runs, {
+        key: 'displayRun',
+      });
 
-      if (compare && compare[0]) {
-        const found = runs.find(
-          (run: UserProfileRun) => run.displayRun === compare[0].target
-        );
-
-        if (found) return found;
+      if (compare && compare[0]?.obj) {
+        return compare[0].obj;
       }
 
       client.say(
         channel.ircChannelName,
-        `I couldn't find any runs for the category "${properties.argument}" in ${channelInfo.game}.`
+        `I couldn't find any results for "${properties.argument}".`
       );
     } else {
       const hasPbInGame = runs.find(
