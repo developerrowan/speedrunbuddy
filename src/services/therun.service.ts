@@ -6,6 +6,7 @@ import {
   getUserProfile,
   LiveRun,
   RunHistory,
+  Session,
   UserProfile,
   UserProfileRun,
 } from 'therungg';
@@ -15,15 +16,6 @@ import { ChannelService, UtilityService } from '../services';
 import Speedrunbuddy from '../speedrunbuddy';
 
 export default abstract class TheRunService {
-  public static pbsCommand(wrapper: ClientWrapper, _: CommandProperties): void {
-    const displayName = wrapper.channel.displayName;
-
-    Speedrunbuddy.client.say(
-      wrapper.channel.ircChannelName,
-      `Check out all of ${displayName}'s runs and PBs at https://therun.gg/${displayName}!`
-    );
-  }
-
   private static async negotiateRun(
     wrapper: ClientWrapper,
     properties: CommandProperties
@@ -173,6 +165,55 @@ export default abstract class TheRunService {
     }
   }
 
+  public static async pbsCommand(
+    wrapper: ClientWrapper,
+    properties: CommandProperties
+  ): Promise<void> {
+    const displayName = wrapper.channel.displayName;
+
+    const run: UserProfileRun | undefined = await TheRunService.negotiateRun(
+      wrapper,
+      properties
+    );
+
+    if (!run) return;
+
+    const historyFile: RunHistory = await getHistory(run.historyFilename);
+
+    let best: number = Number.MAX_SAFE_INTEGER;
+    let pbs = 0;
+
+    for (let i = 0; i < historyFile.sessions.length; i++) {
+      const finishedRuns: string[] = historyFile.sessions[i].finishedRuns;
+
+      if (finishedRuns.length === 0) continue;
+
+      for (let j = 0; j < finishedRuns.length; j++) {
+        const time = parseInt(finishedRuns[j]);
+
+        if (time < best) {
+          best = time;
+          pbs++;
+        }
+      }
+    }
+
+    const hasPb: boolean = pbs > 0;
+
+    Speedrunbuddy.client.say(
+      wrapper.channel.ircChannelName,
+      `${
+        hasPb
+          ? `${displayName} has ${pbs} distinct PBs in ${
+              run.game
+            } ${UtilityService.splitHash(run.displayRun)}!`
+          : ''
+      } Check out all of ${
+        hasPb ? 'their' : `${displayName}'s`
+      } runs and PBs at http://therun.gg/${encodeURIComponent(run.url)}!`
+    );
+  }
+
   public static async pbCommand(
     wrapper: ClientWrapper,
     properties: CommandProperties
@@ -283,11 +324,9 @@ export default abstract class TheRunService {
 
     if (!run) return;
 
-    const historyFile: RunHistory = await getHistory(run.historyFilename);
-
     const game: string = run.game;
     const category: string = UtilityService.splitHash(run.displayRun);
-    const timeInMilliseconds: number = parseInt(historyFile.meta.totalRunTime);
+    const timeInMilliseconds: number = parseInt(run.totalRunTime);
 
     Speedrunbuddy.client.say(
       channel.ircChannelName,
