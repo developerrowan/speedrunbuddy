@@ -72,8 +72,8 @@ export default abstract class UtilityService {
     return result;
   }
 
-  private static pluralise(str: string, n: number) {
-    return n > 0 ? `${str}s` : str;
+  public static pluralise(str: string, n: number) {
+    return n > 1 ? `${str}s` : str;
   }
 
   public static getDaysBetween(startDate: string, endDate: string): number {

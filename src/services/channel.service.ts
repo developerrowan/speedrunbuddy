@@ -1,8 +1,5 @@
-import { ClientWrapper, CommandProperties } from './command-dispatch.service';
 import { AuthService, DatabaseService, UtilityService } from './';
-import * as constants from '../constants';
 import { DecoratedClient } from '@twurple/auth-tmi/lib/client';
-import Speedrunbuddy from '../speedrunbuddy';
 
 export type TwitchChannelInfo = {
   game: string;
@@ -16,77 +13,6 @@ export type Channel = {
 };
 
 export default abstract class ChannelService {
-  public static async joinCommand(
-    wrapper: ClientWrapper,
-    _: CommandProperties
-  ) {
-    const client = Speedrunbuddy.client;
-    const channel = wrapper.channel;
-    const commander = wrapper.userstate.username;
-
-    if (await ChannelService.doesChannelExist(commander)) {
-      client.say(
-        channel.ircChannelName,
-        "Thanks for inviting me over, but I'm actually already in your chat!"
-      );
-      return;
-    }
-
-    try {
-      await client.join(commander);
-    } catch (e: unknown) {
-      client.say(channel.ircChannelName, constants.SOMETHING_WENT_WRONG_MSG);
-      return;
-    }
-
-    const addedChannelToDatabase = await ChannelService.addChannel(commander);
-
-    if (addedChannelToDatabase) {
-      client.say(
-        channel.ircChannelName,
-        "Sweet, I've joined your chat! Thanks for inviting me!"
-      );
-      client.say(`#${commander}`, constants.INTRODUCTORY_MSG);
-    } else {
-      client.say(channel.ircChannelName, constants.SOMETHING_WENT_WRONG_MSG);
-    }
-  }
-
-  public static async leaveCommand(
-    wrapper: ClientWrapper,
-    _: CommandProperties
-  ) {
-    const client = Speedrunbuddy.client;
-    const channel = wrapper.channel;
-    const commander = wrapper.userstate.username;
-
-    if (!(await ChannelService.doesChannelExist(commander))) {
-      client.say(
-        channel.ircChannelName,
-        "I'm not in your chat, so I can't leave!"
-      );
-      return;
-    }
-
-    const result = await ChannelService.removeChannel(commander, client);
-
-    if (result) {
-      client.say(
-        channel.ircChannelName,
-        "I'm sorry to go, but I hope I can return soon! I've left your channel, and I won't attempt to rejoin it unless you tell me to."
-      );
-    } else {
-      client.say(channel.ircChannelName, constants.SOMETHING_WENT_WRONG_MSG);
-    }
-  }
-
-  public static helpCommand(wrapper: ClientWrapper, _: CommandProperties) {
-    Speedrunbuddy.client.say(
-      wrapper.channel.ircChannelName,
-      constants.INTRODUCTORY_MSG
-    );
-  }
-
   public static async getChannel(channel: string): Promise<Channel> {
     const niceChannelName = UtilityService.splitHash(channel);
 
