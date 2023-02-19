@@ -24,6 +24,7 @@ export default class PbCommand implements ICommand {
     );
 
     if (!run) return;
+
     const category = UtilityService.splitHash(run.displayRun);
 
     if (
@@ -60,7 +61,7 @@ export default class PbCommand implements ICommand {
 
     const encodedURL = `https://therun.gg/${splitURL[0]}/${
       splitURL[1]
-    }/${encodeURIComponent(splitURL[2])}`;
+    }/${encodeURI(decodeURI(splitURL[2]))}`;
 
     client.say(
       channel.ircChannelName,
