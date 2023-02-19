@@ -40,8 +40,9 @@ export default class CommandDispatchService {
   public static async registerAll(): Promise<void> {
     const commandDirectory: URL = new URL('../commands', import.meta.url);
 
-    const files = readdirSync(commandDirectory).filter(filename =>
-      filename.endsWith('.command.ts')
+    const files = readdirSync(commandDirectory).filter(
+      filename =>
+        filename.endsWith('.command.ts') || filename.endsWith('.command.js')
     );
 
     for (let i = 0; i < files.length; i++) {
