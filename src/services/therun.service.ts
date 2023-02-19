@@ -20,9 +20,6 @@ export default abstract class TheRunService {
     const client = Speedrunbuddy.client;
     const channel = wrapper.channel;
 
-    channel.channelName = 'zeas44';
-    channel.displayName = 'Zeas44';
-
     let theRunProfile: UserProfile;
     try {
       theRunProfile = await getUserProfile(channel.displayName);
