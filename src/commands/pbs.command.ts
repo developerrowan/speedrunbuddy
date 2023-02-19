@@ -56,7 +56,7 @@ export default class PbsCommand implements ICommand {
           : ''
       } Check out all of ${
         hasPb ? 'their' : `${displayName}'s`
-      } runs and PBs at http://therun.gg/${encodeURIComponent(run.url)}!`
+      } runs and PBs at http://therun.gg/${encodeURI(decodeURI(run.url))}!`
     );
   }
 }
