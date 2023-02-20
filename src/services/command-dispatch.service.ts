@@ -1,17 +1,19 @@
 import { Userstate } from 'tmi.js';
 import ChannelService, { Channel } from './channel.service';
-import * as constants from '../constants';
 import Speedrunbuddy from '../speedrunbuddy';
 import ICommand from '../commands/ICommand';
 import path from 'path';
 import { readdirSync } from 'fs';
 import UtilityService from './utility.service';
+import DatabaseService from './database.service';
+import Constants from '../constants';
 
 export type CommandProperties = {
   raw: string;
   command: string;
-  quotedArgument: string;
-  argument: string;
+  argument?: string;
+  argument2?: string;
+  argument3?: string;
 };
 
 export type ClientWrapper = {
@@ -68,33 +70,90 @@ export default class CommandDispatchService {
     }
   }
 
+  public static doesCommandExist(commandName: string): ICommand | undefined {
+    commandName = commandName.replace('!', '');
+
+    return this._commands.find(
+      c => c.name === commandName || c.alias === commandName
+    );
+  }
+
+  public static async doesCommandHaveCustomName(
+    commandName: string,
+    userId: string
+  ): Promise<ICommand | undefined> {
+    const result = await DatabaseService.pool
+      .query(
+        'SELECT * FROM command_preferences WHERE user_id = $1 AND custom_command_name = $2 AND default_command_name != $2',
+        [userId, commandName]
+      )
+      .then(res => (res.rowCount === 1 ? res.rows[0] : undefined));
+
+    if (result) return this.doesCommandExist(result.default_command_name);
+  }
+
+  public static async isCommandDisabled(
+    commandName: string,
+    userId: string
+  ): Promise<boolean> {
+    return DatabaseService.pool
+      .query(
+        'SELECT * FROM command_preferences WHERE user_id = $1 AND default_command_name = $2 AND command_active = FALSE',
+        [userId, commandName]
+      )
+      .then(res => (res.rowCount === 1 ? true : false));
+  }
+
   public static async execute(
     message: string,
     wrapper: ClientWrapper
   ): Promise<void> {
-    const isCommand = constants.regexpCommand.test(message);
+    const channel: Channel = wrapper.channel;
+    const isCommand = Constants.regexpCommand.test(message);
 
     if (!isCommand) return;
 
-    const regexProperties = message.match(constants.regexpCommand);
+    let regexProperties = message.match(Constants.regexpCommand);
 
-    if (!regexProperties) return; // TODO: send client an err msg
+    if (!regexProperties) return;
+
+    const commandName: string = regexProperties[1];
+
+    const userId: string | undefined = await ChannelService.getUserId(
+      wrapper.channel.channelName
+    );
+
+    if (!userId) {
+      Speedrunbuddy.client.say(
+        channel.ircChannelName,
+        Constants.SOMETHING_WENT_WRONG_MSG
+      );
+      return;
+    }
+
+    let commandExists: ICommand | undefined =
+      this.doesCommandExist(commandName);
+
+    if (!commandExists || (commandExists && commandExists.name !== commandName))
+      commandExists = await this.doesCommandHaveCustomName(commandName, userId);
+
+    if (!commandExists) return;
+
+    if (commandExists.regex) {
+      const temp = message.match(commandExists.regex);
+
+      if (temp) {
+        regexProperties = temp;
+      }
+    }
 
     const commandProperties = {
       raw: regexProperties[0],
       command: regexProperties[1],
-      quotedArgument: regexProperties[2],
-      argument: regexProperties[3]?.trim(),
+      argument: regexProperties[2],
+      argument2: regexProperties[3],
+      argument3: regexProperties[4],
     } as CommandProperties;
-
-    const commandExists: ICommand | undefined =
-      CommandDispatchService._commands.find(
-        c =>
-          c.name === commandProperties.command ||
-          c.alias === commandProperties.command
-      );
-
-    if (!commandExists) return;
 
     // If this command can only be run in the bot's chat and is ran elsewhere, ignore
     if (
@@ -114,6 +173,8 @@ export default class CommandDispatchService {
     // Hacky fix for leaving a channel when part() doesn't immediately work.
     if (!(await ChannelService.doesChannelExist(wrapper.channel.channelName)))
       return;
+
+    if (await this.isCommandDisabled(commandExists.name, userId)) return;
 
     ChannelService.setChannelLastUsedDate(wrapper.channel.channelName);
 

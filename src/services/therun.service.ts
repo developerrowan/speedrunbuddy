@@ -8,9 +8,9 @@ import {
   UserProfileRun,
 } from 'therungg';
 import { TwitchChannelInfo } from './channel.service';
-import * as constants from '../constants';
 import { ChannelService, UtilityService } from '../services';
 import Speedrunbuddy from '../speedrunbuddy';
+import Constants from '../constants';
 
 export default abstract class TheRunService {
   public static async negotiateRun(
@@ -27,7 +27,7 @@ export default abstract class TheRunService {
       console.log(e);
       Speedrunbuddy.client.say(
         channel.ircChannelName,
-        constants.SOMETHING_WENT_WRONG_MSG
+        Constants.SOMETHING_WENT_WRONG_MSG
       );
       return undefined;
     }
@@ -47,30 +47,10 @@ export default abstract class TheRunService {
       title: '',
     };
 
-    if (properties.quotedArgument) {
-      const compare = fuzzysort.go(properties.quotedArgument, runs, {
-        key: 'game',
-      });
-
-      if (compare && compare[0]) {
-        channelInfo.game = compare[0].obj.game;
-      } else {
-        client.say(
-          channel.ircChannelName,
-          `It doesn't look like ${channel.displayName} has any runs for ${properties.quotedArgument}.`
-        );
-        return undefined;
-      }
-    }
-
     // Searches the Live HTTP API first
     const liveRun: LiveRun = await getLiveRun(channel.displayName);
 
-    if (
-      liveRun.game &&
-      liveRun.category &&
-      !(properties.quotedArgument || properties.argument)
-    ) {
+    if (liveRun.game && liveRun.category && !properties.argument) {
       const matchedRun = theRunProfile.runs.find(
         run =>
           run.game === liveRun.game &&
@@ -81,21 +61,18 @@ export default abstract class TheRunService {
     }
 
     // Saves a precious Twitch API call if a fully-formed command is provided
-    if (!(properties.quotedArgument && properties.argument)) {
+    if (!properties.argument) {
       const fetchChannelInfo = await ChannelService.getTwitchChannelInfo(
         channel.channelName
       );
 
       if (!fetchChannelInfo) {
-        client.say(channel.ircChannelName, constants.SOMETHING_WENT_WRONG_MSG);
+        client.say(channel.ircChannelName, Constants.SOMETHING_WENT_WRONG_MSG);
         return undefined;
       }
 
       channelInfo.title = fetchChannelInfo.title;
-
-      if (!properties.quotedArgument) {
-        channelInfo.game = fetchChannelInfo.game;
-      }
+      channelInfo.game = fetchChannelInfo.game;
     }
 
     if (properties.argument) {

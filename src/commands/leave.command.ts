@@ -5,7 +5,7 @@ import {
 import Speedrunbuddy from '../speedrunbuddy';
 import ICommand from './ICommand';
 import { ChannelService } from '../services';
-import * as constants from '../constants';
+import Constants from '../constants';
 
 export default class LeaveCommand implements ICommand {
   public name = 'leave';
@@ -35,7 +35,7 @@ export default class LeaveCommand implements ICommand {
         "I'm sorry to go, but I hope I can return soon! I've left your channel, and I won't attempt to rejoin it unless you tell me to."
       );
     } else {
-      client.say(channel.ircChannelName, constants.SOMETHING_WENT_WRONG_MSG);
+      client.say(channel.ircChannelName, Constants.SOMETHING_WENT_WRONG_MSG);
     }
   }
 }

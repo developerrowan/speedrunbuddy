@@ -5,7 +5,7 @@ import {
 import Speedrunbuddy from '../speedrunbuddy';
 import ICommand from './ICommand';
 import { ChannelService } from '../services';
-import * as constants from '../constants';
+import Constants from '../constants';
 
 export default class JoinCommand implements ICommand {
   public name = 'join';
@@ -30,7 +30,7 @@ export default class JoinCommand implements ICommand {
     try {
       await client.join(commander);
     } catch (e: unknown) {
-      client.say(channel.ircChannelName, constants.SOMETHING_WENT_WRONG_MSG);
+      client.say(channel.ircChannelName, Constants.SOMETHING_WENT_WRONG_MSG);
       return;
     }
 
@@ -41,9 +41,9 @@ export default class JoinCommand implements ICommand {
         channel.ircChannelName,
         "Sweet, I've joined your chat! Thanks for inviting me!"
       );
-      client.say(`#${commander}`, constants.INTRODUCTORY_MSG);
+      client.say(`#${commander}`, Constants.INTRODUCTORY_MSG);
     } else {
-      client.say(channel.ircChannelName, constants.SOMETHING_WENT_WRONG_MSG);
+      client.say(channel.ircChannelName, Constants.SOMETHING_WENT_WRONG_MSG);
     }
   }
 }
