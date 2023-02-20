@@ -1,5 +1,5 @@
+import Constants from '../constants';
 import DatabaseService from './database.service';
-import * as constants from '../constants';
 import { AccessToken } from '@twurple/auth/lib';
 
 export type AuthInfo = {
@@ -18,7 +18,7 @@ export default abstract class AuthService {
         refreshToken: result.rows[0].refreshtoken,
         expiresIn: +result.rows[0].expiresin,
         obtainmentTimestamp: +result.rows[0].obtainmenttimestamp,
-        scope: constants.AUTH_SCOPE,
+        scope: Constants.AUTH_SCOPE,
       } as AuthInfo;
     });
   }

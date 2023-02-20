@@ -12,4 +12,12 @@ CREATE TABLE IF NOT EXISTS auth (
 	refreshToken VARCHAR NOT NULL,
 	expiresIn BIGINT NOT NULL,
 	obtainmentTimestamp BIGINT NOT NULL
-)
+);
+
+CREATE TABLE IF NOT EXISTS command_preferences (
+	user_id VARCHAR,
+	default_command_name VARCHAR NOT NULL,
+	custom_command_name VARCHAR(25),
+	command_active BOOLEAN DEFAULT TRUE,
+	PRIMARY KEY (user_id, default_command_name)
+);

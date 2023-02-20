@@ -133,15 +133,30 @@ export default abstract class ChannelService {
       // This block can be empty due to an issue with part not working. This is handled above.
     }
 
-    const removeResult = await DatabaseService.pool.query(
-      'DELETE FROM channels WHERE username = $1',
-      [username]
-    );
+    const userId: string | undefined = await this.getUserId(username);
 
-    if (removeResult.rowCount === 1) {
+    if (!userId) return false;
+
+    try {
+      await DatabaseService.pool.query('BEGIN');
+
+      await DatabaseService.pool.query(
+        'DELETE FROM command_preferences WHERE user_id = $1',
+        [userId]
+      );
+
+      await DatabaseService.pool.query(
+        'DELETE FROM channels WHERE user_id = $1',
+        [userId]
+      );
+
+      await DatabaseService.pool.query('COMMIT');
+
       return true;
-    }
+    } catch (e: unknown) {
+      await DatabaseService.pool.query('ROLLBACK');
 
-    return false;
+      return false;
+    }
   }
 }
