@@ -31,8 +31,26 @@ export default class AveragetimeCommand implements ICommand {
     const historyFilename: string = run.historyFilename;
     const historyFile: RunHistory = await getHistory(historyFilename);
 
+    const totalFinishedRunTimes: number[] = [];
+
+    for (let i = 0; i < historyFile.sessions.length; i++) {
+      const finishedRuns: string[] = historyFile.sessions[i].finishedRuns;
+
+      for (let ii = 0; ii < finishedRuns.length; ii++) {
+        totalFinishedRunTimes.push(+finishedRuns[ii]);
+      }
+    }
+
+    totalFinishedRunTimes.sort((a, b) => a - b);
+
+    const middleOfTimes: number = Math.floor(totalFinishedRunTimes.length / 2);
+
     const averageTime: number =
-      +historyFile.meta.totalRunTime / historyFile.runs.length;
+      totalFinishedRunTimes.length % 2 === 0
+        ? (totalFinishedRunTimes[middleOfTimes - 1] +
+            totalFinishedRunTimes[middleOfTimes]) /
+          2
+        : totalFinishedRunTimes[middleOfTimes];
 
     Speedrunbuddy.client.say(
       channel.ircChannelName,
