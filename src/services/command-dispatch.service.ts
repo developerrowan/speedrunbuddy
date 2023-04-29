@@ -74,7 +74,7 @@ export default class CommandDispatchService {
     commandName = commandName.replace('!', '');
 
     return this._commands.find(
-      c => c.name === commandName || c.alias === commandName
+      c => c.alias === commandName || c.name === commandName
     );
   }
 
@@ -134,7 +134,14 @@ export default class CommandDispatchService {
     let commandExists: ICommand | undefined =
       this.doesCommandExist(commandName);
 
-    if (!commandExists || (commandExists && commandExists.name !== commandName))
+    const strippedCommandName: string = commandName.replace('!', '');
+
+    if (
+      !commandExists ||
+      (commandExists &&
+        commandExists.name !== strippedCommandName &&
+        commandExists.alias !== strippedCommandName)
+    )
       commandExists = await this.doesCommandHaveCustomName(commandName, userId);
 
     if (!commandExists) return;
