@@ -70,7 +70,8 @@ export default abstract class Speedrunbuddy {
     );
 
     this._websocket.onMessage = (data: LiveWebSocketResponse | undefined) => {
-      if (!data || !channels.includes(`#${data.user.toLowerCase()}`)) return;
+      if (!data?.user || !channels.includes(`#${data.user.toLowerCase()}`))
+        return;
 
       if (data.run.events[0]?.type === 'best_run_ever_event') {
         this.client.say(
