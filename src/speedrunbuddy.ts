@@ -5,13 +5,19 @@ import {
   ChannelService,
   CommandDispatchService,
 } from './services';
+import { LiveWebSocket, LiveWebSocketResponse } from 'therungg';
 
 export default abstract class Speedrunbuddy {
   private static _authProvider: RefreshingAuthProvider;
   private static _client: Client;
+  private static _websocket: LiveWebSocket;
 
   public static get client(): Client {
     return this._client;
+  }
+
+  public static get websocket(): LiveWebSocket {
+    return this._websocket;
   }
 
   public static async start(): Promise<void> {
@@ -44,6 +50,8 @@ export default abstract class Speedrunbuddy {
 
     console.info('Ready to accept commands!');
 
+    this._websocket = new LiveWebSocket();
+
     this._client.on(
       'message',
       async (
@@ -60,5 +68,16 @@ export default abstract class Speedrunbuddy {
         });
       }
     );
+
+    this._websocket.onMessage = (data: LiveWebSocketResponse | undefined) => {
+      if (!data || !channels.includes(`#${data.user.toLowerCase()}`)) return;
+
+      if (data.run.events[0]?.type === 'best_run_ever_event') {
+        this.client.say(
+          `#${data.user}`,
+          `${data.user}!!! Congratulations on your new PB in ${data.run.game} ${data.run.category}! PartyHat PartyHat PartyHat`
+        );
+      }
+    };
   }
 }
