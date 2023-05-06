@@ -79,5 +79,11 @@ export default abstract class Speedrunbuddy {
         );
       }
     };
+
+    setTimeout(() => {
+      if (this._websocket.connection.readyState !== 1) return;
+
+      this._websocket.connection.send('beep');
+    }, 300000);
   }
 }
