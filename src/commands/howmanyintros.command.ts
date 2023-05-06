@@ -35,9 +35,7 @@ export default class HowManyIntrosCommand implements ICommand {
     for (let i = 0; i < history.runs.length; i++) {
       const time: number = +history.runs[i].time;
 
-      if (time > introTime) {
-        totalIntroWatched += time - introTime;
-      }
+      totalIntroWatched += time >= introTime ? introTime : time;
     }
 
     Speedrunbuddy.client.say(
