@@ -33,7 +33,7 @@ export default class HowManyIntrosCommand implements ICommand {
     const history: RunHistory = await getHistory(run.historyFilename);
 
     for (let i = 0; i < history.runs.length; i++) {
-      const time: number = +history.runs[i].time;
+      const time: number = +history.runs[i].duration;
 
       totalIntroWatched += time >= introTime ? introTime : time;
     }
