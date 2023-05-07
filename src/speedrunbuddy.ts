@@ -5,7 +5,7 @@ import {
   ChannelService,
   CommandDispatchService,
 } from './services';
-import { LiveWebSocket, LiveWebSocketResponse } from 'therungg';
+import { LiveRunEvent, LiveWebSocket, LiveWebSocketResponse } from 'therungg';
 
 export default abstract class Speedrunbuddy {
   private static _authProvider: RefreshingAuthProvider;
@@ -70,10 +70,25 @@ export default abstract class Speedrunbuddy {
     );
 
     this._websocket.onMessage = (data: LiveWebSocketResponse | undefined) => {
-      if (!data?.user || !channels.includes(`#${data.user.toLowerCase()}`))
+      if (
+        !data?.user ||
+        !channels.includes(`#${data.user.toLowerCase()}`) ||
+        data.run.events.length === 0
+      )
         return;
 
-      if (data.run.events[0]?.type === 'best_run_ever_event') {
+      let hasEnded = false;
+      let bestEver = false;
+
+      for (let i = 0; i < data.run.events.length; i++) {
+        const event: LiveRunEvent = data.run.events[i];
+
+        if (event.type === 'best_run_ever_event') bestEver = true;
+
+        if (event.type === 'run_ended_event') hasEnded = true;
+      }
+
+      if (hasEnded && bestEver) {
         this.client.say(
           `#${data.user}`,
           `${data.user}!!! Congratulations on your new PB in ${data.run.game} ${data.run.category}! PartyHat PartyHat PartyHat`
